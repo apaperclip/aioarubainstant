@@ -1,0 +1,55 @@
+name: Publish release
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: Verify release tag matches package version
+        run: >-
+          python -c "import os, pathlib, tomllib;
+          version = tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'];
+          assert os.environ['GITHUB_REF_NAME'] == f'v{version}'"
+      - run: uv sync --frozen --all-extras --dev
+      - run: uv build
+      - run: uv run --frozen twine check dist/*
+      - name: Verify wheel in a clean environment
+        run: |
+          python -m venv /tmp/aioarubainstant-wheel
+          /tmp/aioarubainstant-wheel/bin/pip install dist/*.whl
+          /tmp/aioarubainstant-wheel/bin/python -c \
+            "import aioarubainstant; assert len(aioarubainstant.__all__) == 15 and all(hasattr(aioarubainstant, name) for name in aioarubainstant.__all__)"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: python-distributions
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/aioarubainstant
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-distributions
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,0 +1,45 @@
+{
+  "name": "aioarubainstant Python 3.14",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.codex\"",
+  "mounts": [
+    "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind",
+    "source=aioarubainstant-uv-cache,target=/home/vscode/.cache/uv,type=volume"
+  ],
+  "runArgs": [
+    "--security-opt=seccomp=unconfined",
+    "--security-opt=apparmor=unconfined"
+  ],
+  "containerEnv": {
+    "GIT_EDITOR": "code --wait",
+    "UV_CACHE_DIR": "/home/vscode/.cache/uv"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "openai.chatgpt",
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "codex.sandbox.mode": "workspace-write"
+      }
+    }
+  },
+  "postCreateCommand": "/usr/local/bin/aioarubainstant-post-create \"${containerWorkspaceFolder}\""
+}

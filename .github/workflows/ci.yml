@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Tests, lint, and typing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --all-extras --dev
+      - run: uv run --frozen ruff check src tests
+      - run: uv run --frozen ruff format --check src tests
+      - run: uv run --frozen mypy src tests
+      - run: uv run --frozen pytest
+
+  package:
+    name: Build and validate package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - run: uv sync --frozen --all-extras --dev
+      - run: uv build
+      - run: uv run --frozen twine check dist/*
+      - name: Verify wheel in a clean environment
+        run: |
+          python -m venv /tmp/aioarubainstant-wheel
+          /tmp/aioarubainstant-wheel/bin/pip install dist/*.whl
+          /tmp/aioarubainstant-wheel/bin/python -c \
+            "import aioarubainstant; assert len(aioarubainstant.__all__) == 15 and all(hasattr(aioarubainstant, name) for name in aioarubainstant.__all__)"

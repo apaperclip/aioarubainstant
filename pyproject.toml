@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aioarubainstant"
+version = "0.1.0"
+description = "Asynchronous client for the Aruba Instant REST API"
+readme = "README.md"
+requires-python = ">=3.14"
+license = "Apache-2.0"
+authors = [
+  { name = "apaperclip" },
+]
+keywords = ["aruba", "aruba-instant", "asyncio", "home-assistant"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Framework :: AsyncIO",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+dependencies = [
+  "aiohttp>=3.12.0,<4",
+]
+
+[project.urls]
+Changelog = "https://github.com/apaperclip/aioarubainstant/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/apaperclip/aioarubainstant#readme"
+Issues = "https://github.com/apaperclip/aioarubainstant/issues"
+Repository = "https://github.com/apaperclip/aioarubainstant"
+
+[dependency-groups]
+dev = [
+  "build>=1.3.0",
+  "mypy>=1.16.0",
+  "pytest>=8.4.0",
+  "pytest-asyncio>=1.0.0",
+  "pytest-cov>=6.2.0",
+  "ruff>=0.12.0",
+  "twine>=6.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aioarubainstant"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["src", "tests"]
+warn_unreachable = true
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers --cov=aioarubainstant --cov-report=term-missing"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["aioarubainstant"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812",
+  "D203",
+  "D213",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "D", "FBT001", "PLR2004", "S101"]
+
+[tool.ruff.format]
+docstring-code-format = true
