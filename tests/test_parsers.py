@@ -310,6 +310,15 @@ def test_zero_client_snapshot_is_valid_and_preserves_reported_counts() -> None:
     assert snapshot.cluster.client_count == 0
 
 
+def test_conflicting_zero_client_output_cannot_remove_all_clients() -> None:
+    outputs = snapshot_outputs()
+    outputs["show clients"] = command_output("show clients", "0 Clients")
+    outputs["show client debug"] = command_output("show client debug", "0 Clients")
+
+    with pytest.raises(ArubaInstantParseError, match="summary reported 1"):
+        parse_snapshot(outputs)
+
+
 def test_snapshot_uses_marked_master_and_keeps_unknown_master() -> None:
     marked_outputs = snapshot_outputs()
     marked_outputs["show aps"] = command_output(

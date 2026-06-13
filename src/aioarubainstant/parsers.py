@@ -264,6 +264,12 @@ def parse_snapshot(outputs: dict[str, str]) -> ArubaInstantSnapshot:
     summary = parse_summary(outputs["show summary"])
     version = parse_version(outputs["show version"])
 
+    if not clients and summary.client_count not in {None, 0}:
+        msg = (
+            f"show clients reported zero clients while show summary reported {summary.client_count}"
+        )
+        raise ArubaInstantParseError(msg)
+
     clients = _merge_clients(clients, debug_clients)
     access_points, master_ap = _resolve_master(access_points, summary.master_ap)
     clients = _resolve_associations(clients, access_points)
