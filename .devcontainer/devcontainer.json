@@ -10,7 +10,7 @@
   "updateRemoteUserUID": true,
   "initializeCommand": "mkdir -p \"${localEnv:HOME}/.codex\"",
   "mounts": [
-    "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind",
+    // "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind",
     "source=aioarubainstant-uv-cache,target=/home/vscode/.cache/uv,type=volume"
   ],
   "runArgs": [
