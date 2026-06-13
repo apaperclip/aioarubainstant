@@ -107,6 +107,9 @@ The package exports:
 - `ArubaAccessPoint`
 - `ArubaClient`
 
+See [Package Usage](docs/USAGE.md) for the complete model, exception, TLS, and
+integration contract.
+
 Model fields are immutable. A field is `None` when the controller did not
 report it; the package does not invent placeholder values. A snapshot contains
 one `ArubaCluster`, tuples of access points and clients, and private sanitized
@@ -153,6 +156,10 @@ and GitHub CLI.
 The host `${HOME}/.codex` directory is bind-mounted to `/home/vscode/.codex`.
 The `uv` cache is persisted separately in a named volume. No authentication
 data is copied into the image or repository.
+
+Maintainers and coding agents should read [Repository Guidance](AGENTS.md) and
+[Project Notes](docs/PROJECT_NOTES.md) before changing command selection,
+parsing, count provenance, or release automation.
 
 Run the complete local checks with:
 
@@ -215,9 +222,13 @@ redacting those values.
 
 GitHub releases trigger `.github/workflows/release.yml`, which builds and
 validates the distributions before publishing through PyPI trusted publishing.
-Configure the PyPI project with owner `apaperclip`, repository
-`aioarubainstant`, workflow `release.yml`, and environment `pypi`. No PyPI token
-is stored in GitHub or this repository.
+The trusted publisher is configured for owner `apaperclip`, repository
+`aioarubainstant`, workflow `release.yml`, and environment `pypi`. No PyPI
+token is stored in GitHub or this repository.
+
+Version 0.1.0 is available from
+[PyPI](https://pypi.org/project/aioarubainstant/0.1.0/) and the
+[GitHub release](https://github.com/apaperclip/aioarubainstant/releases/tag/v0.1.0).
 
 ## License
 

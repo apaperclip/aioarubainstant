@@ -11,8 +11,9 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - Asynchronous HTTPS transport for the Aruba Instant REST API.
 - SID authentication, reuse, logout, and one-time expired-session recovery.
-- Monitoring support for APs, clients, client debug data, cluster summary, and
-  software version.
+- Monitoring support for APs, detailed client data, cluster summary, and
+  software version using `show aps`, `show client debug`, `show summary`, and
+  `show version`.
 - Immutable typed cluster, AP, client, and snapshot models.
 - Header-derived parsers with malformed-output and zero-client protection.
 - Strict linting, typing, tests, coverage, package validation, and release CI.
