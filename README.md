@@ -161,6 +161,9 @@ Maintainers and coding agents should read [Repository Guidance](AGENTS.md) and
 [Project Notes](docs/PROJECT_NOTES.md) before changing command selection,
 parsing, count provenance, or release automation.
 
+For the planned Home Assistant Core migration, use the reusable
+[Home Assistant Codex goal prompt](docs/HOME_ASSISTANT_CODEX_PROMPT.md).
+
 Run the complete local checks with:
 
 ```bash
