@@ -4,6 +4,8 @@
     "dockerfile": "Dockerfile",
     "context": "."
   },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/aioarubainstant,type=bind",
+  "workspaceFolder": "/workspaces/aioarubainstant",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "initializeCommand": "mkdir -p \"${localEnv:HOME}/.codex\"",

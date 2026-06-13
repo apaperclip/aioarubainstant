@@ -18,8 +18,8 @@ Version 0.1.0 supports Python 3.14 and Aruba Instant 8.6 monitoring commands.
 - Header-derived table parsing tolerant of reordered and additional columns
 - Sanitized raw command output retained privately for diagnostics
 
-The supported commands are `show aps`, `show clients`, `show client debug`,
-`show summary`, and `show version`. The library never issues a per-client
+The supported commands are `show aps`, `show client debug`, `show summary`, and
+`show version`. The library never issues a per-client
 `show client status <mac>` request.
 
 ## Controller setup
@@ -35,6 +35,9 @@ in a cluster. Enable it from the Aruba Instant CLI:
 
 The transport and response behavior follow the
 [Aruba Instant 8.6.0.x REST API Guide](https://www.langs-world.de/Downloads/ArubaInstant/AI_8.6.0.22/Aruba%20Instant%208.6.0.x%20REST%20API%20Guide.pdf).
+Command output formats follow the official
+[Instant AOS-8.x CLI Reference Guide](https://arubanetworking.hpe.com/techdocs/Aruba-Instant-8.x-Books/Aruba-Instant-8.x-CLI-Guide.pdf),
+including its Instant AOS-8.6 command history and examples.
 
 ## Installation
 
@@ -109,6 +112,11 @@ report it; the package does not invent placeholder values. A snapshot contains
 one `ArubaCluster`, tuples of access points and clients, and private sanitized
 raw output for diagnostics.
 
+Client counts are never derived by counting parsed records. The cluster total
+comes from the controller-reported value in `show summary`, and each AP's count
+comes from the `Clients` field in `show aps`. Parsed `show client debug` rows
+provide client details only.
+
 The exception hierarchy is rooted at `ArubaInstantError`:
 
 - `ArubaInstantAuthenticationError`: login credentials were rejected
@@ -157,6 +165,51 @@ uv run pytest
 uv build
 uv run twine check dist/*
 ```
+
+### Real-controller smoke test
+
+The real-controller test is a separate local developer tool. It is not run by
+CI or by the release workflow. Invoke it explicitly when an Aruba Instant AP is
+available:
+
+```bash
+uv run python scripts/check_real_ap.py controller.example.com admin
+```
+
+The script prompts for the controller password without placing it in shell
+history or process arguments. TLS certificate verification is enabled by
+default. Use `--ca-file controller-ca.pem` for a private controller CA, or
+`--insecure` only for an intentional local test. By default it validates each
+supported command independently, validates the combined snapshot, and prints a
+privacy-safe structural report without raw output, passwords, or session IDs.
+
+To validate one command in isolation:
+
+```bash
+uv run python scripts/check_real_ap.py controller.example.com admin --insecure \
+  --validate-command "show client debug"
+```
+
+Focused command validation prints that command's raw output before the
+validation result. The default all-command validation remains privacy-safe and
+does not print raw output.
+
+To print only the controller's raw `show summary` output for manual inspection:
+
+```bash
+uv run python scripts/check_real_ap.py controller.example.com admin --insecure --show-summary
+```
+
+Use `--show-command` to inspect another supported command, for example:
+
+```bash
+uv run python scripts/check_real_ap.py controller.example.com admin --insecure \
+  --show-command "show client debug"
+```
+
+Raw command output may contain controller names, network addresses, client MAC
+addresses, or other private data. Do not publish it without reviewing and
+redacting those values.
 
 ## Release publishing
 

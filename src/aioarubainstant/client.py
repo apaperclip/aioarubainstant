@@ -28,7 +28,6 @@ SUPPORTED_COMMANDS = frozenset(
     {
         "show aps",
         "show client debug",
-        "show clients",
         "show summary",
         "show version",
     }

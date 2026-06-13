@@ -17,7 +17,11 @@ _MIN_WRAPPED_AP_FIELDS: Final = 6
 _INTEGER: Final = re.compile(r"-?\d+")
 _MAC_HEX: Final = re.compile(r"^[0-9a-fA-F]{12}$")
 _COUNT_APS: Final = re.compile(r"\b(\d+)\s+Access\s+Points?\b", re.IGNORECASE)
-_COUNT_CLIENTS: Final = re.compile(r"\b(\d+)\s+(?:Wireless\s+)?Clients?\b", re.IGNORECASE)
+_COUNT_CLIENTS: Final = re.compile(
+    r"\b(\d+)\s+(?:Wireless\s+)?Clients?\b|"
+    r"\bNumber\s+of\s+Clients?\s*:\s*(\d+)\b",
+    re.IGNORECASE,
+)
 _SECRET: Final = re.compile(
     r"(?i)(\b(?:sid|passwd|password)\b\s*(?:=|:)\s*)([^\s,}\]]+|\"[^\"]*\")"
 )
@@ -164,22 +168,6 @@ def _parse_wrapped_aps_table(output: str) -> list[dict[str, str]]:
     return rows
 
 
-def parse_clients(output: str) -> tuple[tuple[ArubaClient, ...], int | None]:
-    """Parse ``show clients`` output."""
-    clean = _clean_output(output)
-    reported_count = _extract_count(clean, _COUNT_CLIENTS)
-    if reported_count == 0:
-        return (), 0
-
-    rows = _parse_table(clean, required_headers=(_CLIENT_MAC,))
-    clients = tuple(_client_from_row(row) for row in rows if _lookup(row, _CLIENT_MAC))
-    if not clients:
-        msg = "show clients did not contain a usable client table"
-        raise ArubaInstantParseError(msg)
-    _validate_reported_count("clients", reported_count, len(clients))
-    return clients, reported_count
-
-
 def parse_client_debug(output: str) -> tuple[ArubaClient, ...]:
     """Parse ``show client debug`` table or record output."""
     clean = _clean_output(output)
@@ -205,9 +193,6 @@ def parse_summary(output: str) -> ArubaCluster:
     ap_count = _parse_int(_lookup(values, _SUMMARY_AP_COUNT))
     client_count = _parse_int(_lookup(values, _SUMMARY_CLIENT_COUNT))
     ap_count = ap_count if ap_count is not None else _extract_count(clean, _COUNT_APS)
-    client_count = (
-        client_count if client_count is not None else _extract_count(clean, _COUNT_CLIENTS)
-    )
     cluster = ArubaCluster(
         name=_optional(_lookup(values, _SUMMARY_NAME)),
         management_address=_optional(_lookup(values, _SUMMARY_ADDRESS)),
@@ -250,7 +235,6 @@ def parse_snapshot(outputs: dict[str, str]) -> ArubaInstantSnapshot:
     missing = {
         "show aps",
         "show client debug",
-        "show clients",
         "show summary",
         "show version",
     } - outputs.keys()
@@ -259,18 +243,10 @@ def parse_snapshot(outputs: dict[str, str]) -> ArubaInstantSnapshot:
         raise ArubaInstantParseError(msg)
 
     access_points, ap_count = parse_aps(outputs["show aps"])
-    clients, client_count = parse_clients(outputs["show clients"])
-    debug_clients = parse_client_debug(outputs["show client debug"])
+    clients = parse_client_debug(outputs["show client debug"])
     summary = parse_summary(outputs["show summary"])
     version = parse_version(outputs["show version"])
 
-    if not clients and summary.client_count not in {None, 0}:
-        msg = (
-            f"show clients reported zero clients while show summary reported {summary.client_count}"
-        )
-        raise ArubaInstantParseError(msg)
-
-    clients = _merge_clients(clients, debug_clients)
     access_points, master_ap = _resolve_master(access_points, summary.master_ap)
     clients = _resolve_associations(clients, access_points)
     cluster = replace(
@@ -278,7 +254,7 @@ def parse_snapshot(outputs: dict[str, str]) -> ArubaInstantSnapshot:
         version=version,
         master_ap=master_ap,
         ap_count=summary.ap_count if summary.ap_count is not None else ap_count,
-        client_count=(summary.client_count if summary.client_count is not None else client_count),
+        client_count=summary.client_count,
     )
     return ArubaInstantSnapshot(
         cluster=cluster,
@@ -401,34 +377,6 @@ def _client_from_row(row: dict[str, str]) -> ArubaClient:
     )
 
 
-def _merge_clients(
-    clients: tuple[ArubaClient, ...], debug_clients: tuple[ArubaClient, ...]
-) -> tuple[ArubaClient, ...]:
-    debug_by_mac = {client.mac: client for client in debug_clients}
-    return tuple(
-        _merge_client(client, debug_by_mac[client.mac]) if client.mac in debug_by_mac else client
-        for client in clients
-    )
-
-
-def _merge_client(primary: ArubaClient, debug: ArubaClient) -> ArubaClient:
-    return ArubaClient(
-        mac=primary.mac,
-        hostname=debug.hostname or primary.hostname,
-        ip_address=debug.ip_address or primary.ip_address,
-        ssid=debug.ssid or primary.ssid,
-        bssid=debug.bssid or primary.bssid,
-        associated_ap=debug.associated_ap or primary.associated_ap,
-        signal_strength=(
-            debug.signal_strength if debug.signal_strength is not None else primary.signal_strength
-        ),
-        link_speed=debug.link_speed if debug.link_speed is not None else primary.link_speed,
-        channel=debug.channel if debug.channel is not None else primary.channel,
-        phy_mode=debug.phy_mode or primary.phy_mode,
-        role=debug.role or primary.role,
-    )
-
-
 def _resolve_master(
     access_points: tuple[ArubaAccessPoint, ...], master: str | None
 ) -> tuple[tuple[ArubaAccessPoint, ...], str | None]:
@@ -530,7 +478,10 @@ def _parse_master(value: str | None) -> bool | None:
 
 def _extract_count(output: str, pattern: re.Pattern[str]) -> int | None:
     match = pattern.search(output)
-    return int(match.group(1)) if match is not None else None
+    if match is None:
+        return None
+    value = next((group for group in match.groups() if group is not None), None)
+    return int(value) if value is not None else None
 
 
 def _validate_reported_count(label: str, reported: int | None, parsed: int) -> None:

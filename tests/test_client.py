@@ -98,7 +98,7 @@ async def test_authentication_and_sid_reuse() -> None:
     client = make_client(session)
 
     assert await client.async_run_command("show aps") == "first"
-    assert await client.async_run_command("show clients") == "second"
+    assert await client.async_run_command("show client debug") == "second"
 
     assert [request["url"] for request in session.requests] == [
         "https://controller.local:4343/rest/login",
@@ -305,7 +305,7 @@ async def test_commands_are_serialized() -> None:
     client = make_client(session)
 
     results = await asyncio.gather(
-        client.async_run_command("show aps"), client.async_run_command("show clients")
+        client.async_run_command("show aps"), client.async_run_command("show client debug")
     )
     assert tuple(results) == ("one", "two")
 
@@ -315,6 +315,8 @@ async def test_unsupported_command_and_invalid_hosts() -> None:
     client = make_client(FakeSession())
     with pytest.raises(ValueError, match="Unsupported"):
         await client.async_run_command("show running-config")
+    with pytest.raises(ValueError, match="Unsupported"):
+        await client.async_run_command("show clients")
 
     with pytest.raises(ValueError, match="hostname"):
         ArubaInstantClient("http://controller.local", "admin", "secret")
@@ -412,6 +414,11 @@ async def test_public_snapshot_convenience_function() -> None:
 
     assert snapshot.cluster.name == "Office"
     assert snapshot.clients[0].hostname == "phone"
+    assert {
+        request["params"]["cmd"]
+        for request in session.requests
+        if request["url"].endswith("show-cmd")
+    } == {"show aps", "show client debug", "show summary", "show version"}
     assert not session.closed
 
 
