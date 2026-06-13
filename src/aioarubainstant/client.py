@@ -230,6 +230,8 @@ class ArubaInstantClient:
         try:
             payload = json.loads(body)
         except (json.JSONDecodeError, TypeError) as err:
+            if status >= HTTP_BAD_REQUEST:
+                _raise_http_error(status, operation=operation)
             msg = f"Controller returned malformed JSON during {operation}"
             raise ArubaInstantParseError(msg) from err
 
@@ -240,11 +242,7 @@ class ArubaInstantClient:
         result = dict(payload)
         if status >= HTTP_BAD_REQUEST:
             message = _response_message(result) or f"Controller returned HTTP {status}"
-            if operation == "login" and status in {401, 403}:
-                raise ArubaInstantAuthenticationError(message)
-            if operation == "command":
-                raise ArubaInstantCommandError(message)
-            raise ArubaInstantConnectionError(message)
+            _raise_http_error(status, operation=operation, message=message)
         return result
 
     def _get_session(self) -> ClientSession:
@@ -297,6 +295,15 @@ def _raise_text_error(text: str) -> None:
     if "rest api service is available only on the master" in lowered:
         msg = "REST API service is available only on the master AP"
         raise ArubaInstantNotMasterError(msg)
+
+
+def _raise_http_error(status: int, *, operation: str, message: str | None = None) -> None:
+    detail = message or f"Controller returned HTTP {status}"
+    if operation == "login" and status in {401, 403}:
+        raise ArubaInstantAuthenticationError(detail)
+    if operation == "command":
+        raise ArubaInstantCommandError(detail)
+    raise ArubaInstantConnectionError(detail)
 
 
 def _raise_controller_error(payload: Mapping[str, object], *, operation: str) -> None:

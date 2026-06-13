@@ -28,6 +28,15 @@ def test_models_are_immutable_and_preserve_absent_fields() -> None:
     assert client.hostname is None
     raw_output = object.__getattribute__(snapshot, "_raw_output")
     assert raw_output["show summary"] == "sanitized"
+    assert "sanitized" not in repr(snapshot)
+
+    same_data = ArubaInstantSnapshot(
+        cluster=cluster,
+        access_points=(access_point,),
+        clients=(client,),
+        _raw_output={"show summary": "different diagnostic output"},
+    )
+    assert snapshot == same_data
 
     with pytest.raises(FrozenInstanceError):
         cluster.name = "changed"  # type: ignore[misc]

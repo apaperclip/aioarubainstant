@@ -361,6 +361,16 @@ async def test_http_authentication_and_command_errors() -> None:
     with pytest.raises(ArubaInstantCommandError, match="server error"):
         await make_client(session).async_run_command("show aps")
 
+    with pytest.raises(ArubaInstantAuthenticationError, match="HTTP 401"):
+        await make_client(FakeSession(FakeResponse("Unauthorized", status=401))).async_login()
+
+    plain_command_error = FakeSession(
+        {"Status": "Success", "sid": "session-one"},
+        FakeResponse("Internal Server Error", status=500),
+    )
+    with pytest.raises(ArubaInstantCommandError, match="HTTP 500"):
+        await make_client(plain_command_error).async_run_command("show aps")
+
 
 @pytest.mark.asyncio
 async def test_logout_http_and_string_status_errors() -> None:

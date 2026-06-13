@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
@@ -60,7 +60,7 @@ class ArubaInstantSnapshot:
     cluster: ArubaCluster
     access_points: tuple[ArubaAccessPoint, ...]
     clients: tuple[ArubaClient, ...]
-    _raw_output: Mapping[str, str]
+    _raw_output: Mapping[str, str] = field(repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Protect retained diagnostic output from mutation."""
