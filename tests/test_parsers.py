@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
-from aioarubainstant import ArubaInstantParseError
+from aioarubainstant import ArubaAccessPoint, ArubaInstantParseError
 from aioarubainstant.parsers import (
     parse_aps,
     parse_client_debug,
@@ -17,6 +18,8 @@ from aioarubainstant.parsers import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def render_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
@@ -152,6 +155,40 @@ def test_zero_aps_and_master_marker_variants() -> None:
     assert access_points[1].is_master is False
 
 
+def test_parse_wrapped_aruba_8_6_access_point_table() -> None:
+    output = (FIXTURES / "show_aps_8_6_wrapped.txt").read_text()
+
+    access_points, count = parse_aps(output)
+
+    assert count == 1
+    assert access_points == (
+        ArubaAccessPoint(
+            name="lobby",
+            ip_address="192.0.2.10",
+            model="225(indoor)",
+            serial="CN123456",
+            connected_clients=2,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        "Name IP Address Mode Spectrum Clients Type\nno divider",
+        "Name IP Address Mode Spectrum Clients Type\nSerial # radio0 Channel\n"
+        "---- ---------- ---- -------- ------- ----\n------- --------------\n"
+        "lobby 192.0.2.10 access disable 2\nCN123 36",
+        "Name IP Address Mode Spectrum Clients Type\nSerial # radio0 Channel\n"
+        "---- ---------- ---- -------- ------- ----\n------- --------------\n"
+        "lobby 192.0.2.10 access disable 2 225(indoor)",
+    ],
+)
+def test_malformed_wrapped_access_point_tables_raise(output: str) -> None:
+    with pytest.raises(ArubaInstantParseError):
+        parse_aps(output)
+
+
 def test_access_point_table_with_no_usable_rows_is_malformed() -> None:
     empty_row = render_table(["Name", "IP Address"], [["", ""]])
     with pytest.raises(ArubaInstantParseError, match="usable access-point table"):
@@ -167,6 +204,19 @@ def test_parse_clients_reordered_columns_and_blank_values() -> None:
     assert clients[0].ssid == "Staff"
     assert clients[0].role == "employee"
     assert clients[0].signal_strength is None
+
+
+def test_alias_precedence_is_deterministic() -> None:
+    table = render_table(
+        ["MAC", "Name", "Hostname", "Network", "SSID", "Speed", "Link Speed"],
+        [["11:22:33:44:55:66", "fallback", "preferred", "old", "new", "54", "866"]],
+    )
+
+    client = parse_clients(table)[0][0]
+
+    assert client.hostname == "preferred"
+    assert client.ssid == "new"
+    assert client.link_speed == 866
 
 
 def test_parse_client_debug_table_and_records() -> None:

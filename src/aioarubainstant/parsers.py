@@ -10,7 +10,10 @@ from .exceptions import ArubaInstantParseError
 from .models import ArubaAccessPoint, ArubaClient, ArubaCluster, ArubaInstantSnapshot
 
 _DASH_RUN: Final = re.compile(r"-{2,}")
+_DIVIDER_LINE: Final = re.compile(r"^[\s-]+$")
 _MIN_TABLE_COLUMNS: Final = 2
+_MIN_WRAPPED_AP_HEADER_LINES: Final = 2
+_MIN_WRAPPED_AP_FIELDS: Final = 6
 _INTEGER: Final = re.compile(r"-?\d+")
 _MAC_HEX: Final = re.compile(r"^[0-9a-fA-F]{12}$")
 _COUNT_APS: Final = re.compile(r"\b(\d+)\s+Access\s+Points?\b", re.IGNORECASE)
@@ -19,43 +22,43 @@ _SECRET: Final = re.compile(
     r"(?i)(\b(?:sid|passwd|password)\b\s*(?:=|:)\s*)([^\s,}\]]+|\"[^\"]*\")"
 )
 
-_AP_NAME = frozenset({"name", "ap name", "access point"})
-_AP_IP = frozenset({"ip", "ip address", "ap ip", "ap ip address"})
-_AP_MAC = frozenset({"mac", "mac address", "ap mac", "ap mac address"})
-_AP_MODEL = frozenset({"model", "type", "ap type"})
-_AP_SERIAL = frozenset({"serial", "serial #", "serial number"})
-_AP_FIRMWARE = frozenset({"firmware", "version", "software version"})
-_AP_CLIENTS = frozenset({"clients", "client count", "connected clients"})
-_AP_MASTER = frozenset({"master", "is master"})
+_AP_NAME = ("name", "ap name", "access point")
+_AP_IP = ("ip address", "ap ip address", "ap ip", "ip")
+_AP_MAC = ("mac address", "ap mac address", "ap mac", "mac")
+_AP_MODEL = ("model", "ap type", "type")
+_AP_SERIAL = ("serial #", "serial number", "serial")
+_AP_FIRMWARE = ("firmware", "software version", "version")
+_AP_CLIENTS = ("connected clients", "client count", "clients")
+_AP_MASTER = ("is master", "master")
 
-_CLIENT_MAC = frozenset({"mac", "mac address", "client mac", "client mac address", "sta"})
-_CLIENT_HOSTNAME = frozenset({"name", "hostname", "client name"})
-_CLIENT_IP = frozenset({"ip", "ip address", "client ip", "client ip address"})
-_CLIENT_SSID = frozenset({"network", "ssid", "essid"})
-_CLIENT_BSSID = frozenset({"bssid"})
-_CLIENT_AP = frozenset({"ap", "ap name", "access point", "associated ap"})
-_CLIENT_SIGNAL = frozenset({"signal", "rssi", "signal strength", "signal (dbm)"})
-_CLIENT_SPEED = frozenset({"speed", "speed (mbps)", "link speed", "link speed (mbps)"})
-_CLIENT_CHANNEL = frozenset({"channel"})
-_CLIENT_PHY = frozenset({"phy", "phy mode", "type", "mode"})
-_CLIENT_ROLE = frozenset({"role"})
+_CLIENT_MAC = ("mac address", "client mac address", "client mac", "mac", "sta")
+_CLIENT_HOSTNAME = ("hostname", "client name", "name")
+_CLIENT_IP = ("ip address", "client ip address", "client ip", "ip")
+_CLIENT_SSID = ("ssid", "essid", "network")
+_CLIENT_BSSID = ("bssid",)
+_CLIENT_AP = ("associated ap", "ap name", "access point", "ap")
+_CLIENT_SIGNAL = ("signal strength", "signal (dbm)", "signal", "rssi")
+_CLIENT_SPEED = ("link speed (mbps)", "link speed", "speed (mbps)", "speed")
+_CLIENT_CHANNEL = ("channel",)
+_CLIENT_PHY = ("phy mode", "phy", "mode", "type")
+_CLIENT_ROLE = ("role",)
 
-_SUMMARY_NAME = frozenset({"cluster name", "swarm name", "virtual controller name"})
-_SUMMARY_ADDRESS = frozenset(
-    {
-        "management address",
-        "management ip",
-        "virtual controller ip",
-        "virtual controller ip address",
-    }
+_SUMMARY_NAME = ("cluster name", "swarm name", "virtual controller name")
+_SUMMARY_ADDRESS = (
+    "management address",
+    "management ip",
+    "virtual controller ip",
+    "virtual controller ip address",
 )
-_SUMMARY_MASTER = frozenset(
-    {"master", "master ap", "master ip", "master ip address", "master ap ip address"}
+_SUMMARY_MASTER = (
+    "master ap ip address",
+    "master ip address",
+    "master ap",
+    "master ip",
+    "master",
 )
-_SUMMARY_AP_COUNT = frozenset({"access points", "ap count", "number of aps", "aps"})
-_SUMMARY_CLIENT_COUNT = frozenset(
-    {"clients", "client count", "number of clients", "wireless clients"}
-)
+_SUMMARY_AP_COUNT = ("number of aps", "ap count", "access points", "aps")
+_SUMMARY_CLIENT_COUNT = ("number of clients", "client count", "wireless clients", "clients")
 
 
 def parse_aps(output: str) -> tuple[tuple[ArubaAccessPoint, ...], int | None]:
@@ -65,7 +68,10 @@ def parse_aps(output: str) -> tuple[tuple[ArubaAccessPoint, ...], int | None]:
     if reported_count == 0:
         return (), 0
 
-    rows = _parse_table(clean, required_headers=(_AP_NAME,))
+    try:
+        rows = _parse_table(clean, required_headers=(_AP_NAME,))
+    except ArubaInstantParseError:
+        rows = _parse_wrapped_aps_table(clean)
     access_points: list[ArubaAccessPoint] = []
     for row in rows:
         name = _optional(_lookup(row, _AP_NAME))
@@ -100,6 +106,62 @@ def parse_aps(output: str) -> tuple[tuple[ArubaAccessPoint, ...], int | None]:
         raise ArubaInstantParseError(msg)
     _validate_reported_count("access points", reported_count, len(access_points))
     return tuple(access_points), reported_count
+
+
+def _parse_wrapped_aps_table(output: str) -> list[dict[str, str]]:
+    """Parse the wrapped multi-line AP table emitted by Aruba Instant 8.6."""
+    lines = output.splitlines()
+    header_index = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if _canonical(line).startswith("name ip address mode spectrum clients type")
+        ),
+        None,
+    )
+    if header_index is None:
+        msg = "Command output did not contain the required table headers"
+        raise ArubaInstantParseError(msg)
+
+    divider_index = next(
+        (index for index in range(header_index + 1, len(lines)) if _is_divider_line(lines[index])),
+        None,
+    )
+    if divider_index is None:
+        msg = "Wrapped AP table did not contain a header divider"
+        raise ArubaInstantParseError(msg)
+
+    header_lines = divider_index - header_index
+    data_index = divider_index
+    while data_index < len(lines) and _is_divider_line(lines[data_index]):
+        data_index += 1
+    data_lines = [line.strip() for line in lines[data_index:] if line.strip()]
+    if (
+        header_lines < _MIN_WRAPPED_AP_HEADER_LINES
+        or not data_lines
+        or len(data_lines) % header_lines
+    ):
+        msg = "Wrapped AP table contained incomplete logical rows"
+        raise ArubaInstantParseError(msg)
+
+    rows: list[dict[str, str]] = []
+    for offset in range(0, len(data_lines), header_lines):
+        primary = data_lines[offset].split()
+        continuation = data_lines[offset + 1].split()
+        if len(primary) < _MIN_WRAPPED_AP_FIELDS or not continuation:
+            msg = "Wrapped AP table contained a malformed access-point row"
+            raise ArubaInstantParseError(msg)
+        rows.append(
+            {
+                "name": primary[0],
+                "ip address": primary[1],
+                "mode": primary[2],
+                "clients": primary[4],
+                "type": primary[5],
+                "serial #": continuation[0],
+            }
+        )
+    return rows
 
 
 def parse_clients(output: str) -> tuple[tuple[ArubaClient, ...], int | None]:
@@ -239,12 +301,12 @@ def _clean_output(output: str) -> str:
 def _parse_table(
     output: str,
     *,
-    required_headers: tuple[frozenset[str], ...],
+    required_headers: tuple[tuple[str, ...], ...],
 ) -> list[dict[str, str]]:
     lines = output.splitlines()
     for divider_index, divider in enumerate(lines):
         spans = list(_DASH_RUN.finditer(divider))
-        if len(spans) < _MIN_TABLE_COLUMNS or divider_index == 0:
+        if not _is_divider_line(divider) or divider_index == 0:
             continue
         header = lines[divider_index - 1]
         starts = [span.start() for span in spans]
@@ -261,7 +323,7 @@ def _parse_table(
                 if rows:
                     break
                 continue
-            if len(_DASH_RUN.findall(line)) >= _MIN_TABLE_COLUMNS:
+            if _is_divider_line(line):
                 continue
             values = [
                 line[start : starts[index + 1] if index + 1 < len(starts) else None].strip()
@@ -296,6 +358,12 @@ def _parse_records(output: str) -> list[dict[str, str]]:
     if current:
         records.append(current)
     return records
+
+
+def _is_divider_line(line: str) -> bool:
+    return bool(
+        _DIVIDER_LINE.fullmatch(line) and len(_DASH_RUN.findall(line)) >= _MIN_TABLE_COLUMNS
+    )
 
 
 def _parse_key_values(output: str) -> dict[str, str]:
@@ -410,7 +478,7 @@ def _identifier(value: str | None) -> str:
     return value.strip().casefold() if value is not None else ""
 
 
-def _lookup(row: dict[str, str], aliases: frozenset[str]) -> str | None:
+def _lookup(row: dict[str, str], aliases: tuple[str, ...]) -> str | None:
     return next((row[alias] for alias in aliases if alias in row), None)
 
 

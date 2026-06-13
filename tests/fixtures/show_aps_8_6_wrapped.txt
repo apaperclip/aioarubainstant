@@ -1,0 +1,17 @@
+cli output:
+COMMAND=show aps
+
+1 Access Point
+--------------
+Name IP Address Mode Spectrum Clients Type IPv6 Address Mesh Role Zone
+Serial # radio0 Channel radio0 Power (dB) radio0 Utilization (%) radio0 Noise Floor (dBm)
+radio1 Channel radio1 Power (dB) radio1 Utilization (%) radio1 Noise Floor (dBm) Need
+Antenna Config From Port Config Id Config Csum Ext SSID Active Link Local IP Address
+---- ---------- ---- -------- ------- ---- ------------ --------- ---- -
+------- -------------- ----------------- ---------------------- --------------------------------------
+-------------- ----------------- ---------------------- -------------------------------------- ----
+------- ------ ---- ------ -- ----------- -------- ---- ------ -------- -- ------- ---------------
+lobby 192.0.2.10 access disable 2 225(indoor) -- N/A -
+CN123456 36 18 10(good) -96(good)
+6 18 12(good) -96(good) No
+none 66 45054 enable --
