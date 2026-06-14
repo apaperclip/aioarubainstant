@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
 
+from ._transport import ArubaInstantTCPConnector
 from .exceptions import (
     ArubaInstantAuthenticationError,
     ArubaInstantCommandError,
@@ -249,7 +250,7 @@ class ArubaInstantClient:
             if not self._owns_session:
                 msg = "The caller-provided aiohttp session is closed"
                 raise ArubaInstantConnectionError(msg)
-            self._session = ClientSession()
+            self._session = ClientSession(connector=ArubaInstantTCPConnector())
         return self._session
 
 

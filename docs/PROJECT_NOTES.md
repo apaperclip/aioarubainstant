@@ -102,3 +102,16 @@ For changes after 0.1.0:
 4. Preserve count provenance and avoid deriving reported values from row
    lengths.
 5. Update version references and the changelog together for a release.
+
+## Version 0.1.1 HTTP Compatibility
+
+Testing after version 0.1.0 found that some Aruba Instant login responses
+contain a line-break control byte in the `Content-Type` header. aiohttp 3.14.1
+accepts that response in its normal lax response mode, but
+`PYTHONASYNCIODEBUG=1` enables strict parsing and rejects the response before
+the JSON body reaches the library.
+
+Version 0.1.1 uses a dedicated response parser
+only for library-owned Aruba controller sessions. It does not disable asyncio
+debug mode or change global aiohttp behavior. Caller-provided sessions keep
+their caller-selected parser behavior.

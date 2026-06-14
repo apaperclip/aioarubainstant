@@ -1,18 +1,18 @@
 # Package Usage
 
-This guide summarizes the public contract of `aioarubainstant 0.1.0` for
+This guide summarizes the public contract of `aioarubainstant 0.1.1` for
 application and Home Assistant integration authors.
 
 ## Installation
 
 ```bash
-python -m pip install aioarubainstant==0.1.0
+python -m pip install aioarubainstant==0.1.1
 ```
 
 Home Assistant manifest requirement:
 
 ```json
-"requirements": ["aioarubainstant==0.1.0"]
+"requirements": ["aioarubainstant==0.1.1"]
 ```
 
 The package requires Python 3.14 or newer and has no Home Assistant dependency.
@@ -57,6 +57,12 @@ The convenience function creates and closes a short-lived client. When using
 `ArubaInstantClient` directly, close its context or call `async_close()` to log
 out. A caller-provided `aiohttp.ClientSession` remains owned by the caller and
 is not closed by the library.
+
+For Aruba firmware that emits malformed HTTP response headers, let
+`ArubaInstantClient` create its own session. The internally owned session uses
+controller-scoped compatibility parsing even when `PYTHONASYNCIODEBUG=1` makes
+aiohttp strict. A caller-provided session keeps its own connector and parser
+behavior. This compatibility behavior is included in version 0.1.1.
 
 ## Snapshot Contract
 

@@ -114,7 +114,7 @@ At the time this prompt was written, the Aruba integration was a legacy YAML
 documentation incorrectly said telnet was required.
 
 Home Assistant `dev` required Python 3.14.2 or newer, making
-`aioarubainstant==0.1.0` compatible. Re-verify all of these facts before
+`aioarubainstant==0.1.1` compatible. Re-verify all of these facts before
 implementation rather than assuming they remain current.
 
 ## Non-negotiable library behavior
@@ -148,7 +148,7 @@ Produce a focused, review-ready Home Assistant Core migration with these
 minimum behaviors:
 
 1. Replace `pexpect` and SSH command parsing with
-   `aioarubainstant==0.1.0` in `manifest.json`.
+   `aioarubainstant==0.1.1` in `manifest.json`.
 2. Use asynchronous Home Assistant APIs only. Do not call blocking network or
    subprocess APIs in the event loop.
 3. Add a UI config flow that validates a real snapshot before creating an
@@ -168,9 +168,13 @@ minimum behaviors:
    connection settings according to current Home Assistant developer
    documentation.
 8. Store typed runtime state using the current documented config-entry pattern.
-9. Reuse the client and Home Assistant-managed HTTP session according to the
-   current external-API and config-entry lifecycle guidance. Avoid a new login
-   and HTTP session for every entity or every command.
+9. Reuse one client according to the current external-API and config-entry
+   lifecycle guidance. Verify the pinned `aioarubainstant` release's malformed
+   Aruba HTTP-header compatibility behavior before deciding session ownership.
+   Releases containing that compatibility fix require the library-owned session
+   path; a caller-provided Home Assistant session retains aiohttp's strict
+   parser under `PYTHONASYNCIODEBUG=1`. Avoid a new login and HTTP session for
+   every entity or every command.
 10. Use the data-fetching architecture prescribed by current Home Assistant
     developer documentation to fetch exactly one complete snapshot per refresh.
     If that guidance calls for a `DataUpdateCoordinator`, implement it using

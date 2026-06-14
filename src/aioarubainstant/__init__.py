@@ -34,4 +34,4 @@ __all__ = [
     "async_get_snapshot",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

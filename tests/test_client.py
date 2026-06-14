@@ -190,13 +190,41 @@ async def test_context_manager_closes_owned_session(monkeypatch: pytest.MonkeyPa
         {"Status": "Success", "sid": "session-one"},
         {"Status-code": 0, "message": "User logout successfully"},
     )
-    monkeypatch.setattr("aioarubainstant.client.ClientSession", lambda: session)
+    monkeypatch.setattr("aioarubainstant.client.ClientSession", lambda **_kwargs: session)
 
     async with ArubaInstantClient("controller.local", "admin", "secret") as client:
         await client.async_login()
         assert client.is_authenticated
 
     assert session.closed
+
+
+@pytest.mark.asyncio
+async def test_owned_session_accepts_aruba_malformed_response_header() -> None:
+    async def handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        request = await reader.readuntil(b"\r\n\r\n")
+        payload = (
+            {"Status-code": 0, "message": "logout successful"}
+            if b" /rest/logout " in request
+            else {"Status": "Success", "sid": "session-one"}
+        )
+        body = json.dumps(payload).encode()
+        writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\n\r\n\r\n" + body)
+        await writer.drain()
+        writer.close()
+        await writer.wait_closed()
+
+    server = await asyncio.start_server(handler, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+
+    async with server:
+        client = ArubaInstantClient("controller.local", "admin", "secret")
+        client._base_url = f"http://127.0.0.1:{port}"  # noqa: SLF001
+        async with client:
+            await client.async_login()
+            assert client.is_authenticated
+
+    assert not client.is_authenticated
 
 
 @pytest.mark.asyncio
@@ -207,7 +235,7 @@ async def test_cleanup_closes_owned_session_when_logout_fails(
         {"Status": "Success", "sid": "session-one"},
         {"Status-code": 7, "message": "logout failed"},
     )
-    monkeypatch.setattr("aioarubainstant.client.ClientSession", lambda: session)
+    monkeypatch.setattr("aioarubainstant.client.ClientSession", lambda **_kwargs: session)
     client = ArubaInstantClient("controller.local", "admin", "secret")
     await client.async_login()
 

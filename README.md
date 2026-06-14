@@ -4,7 +4,7 @@
 on Aruba Instant controllers. It is designed for Home Assistant integrations
 but has no Home Assistant dependency or entity logic.
 
-Version 0.1.0 supports Python 3.14 and Aruba Instant 8.6 monitoring commands.
+Version 0.1.1 supports Python 3.14 and Aruba Instant 8.6 monitoring commands.
 
 ## Features
 
@@ -42,7 +42,7 @@ including its Instant AOS-8.6 command history and examples.
 ## Installation
 
 ```bash
-python -m pip install aioarubainstant==0.1.0
+python -m pip install aioarubainstant==0.1.1
 ```
 
 ## Usage
@@ -76,6 +76,12 @@ Controllers commonly use a private certificate. Prefer an `ssl.SSLContext`
 that trusts the controller CA. Set `verify_ssl=False` only when certificate
 verification is intentionally disabled.
 
+Some Aruba Instant firmware emits a malformed response header that aiohttp
+rejects when `PYTHONASYNCIODEBUG` enables strict response parsing. A client
+using its internally owned HTTP session scopes Aruba-compatible response
+parsing to that controller connection without disabling asyncio debug globally.
+This compatibility behavior is included in version 0.1.1.
+
 For a caller-owned HTTP session:
 
 ```python
@@ -95,6 +101,8 @@ async with aiohttp.ClientSession() as session:
 ```
 
 `async_close()` logs out but never closes a caller-provided session.
+Caller-provided sessions also retain their own connector and response-parser
+behavior; they do not use the Aruba-specific compatibility connector.
 
 ## Public contract
 
@@ -136,10 +144,10 @@ PyPI, or Codex credentials in this repository.
 
 ## Home Assistant
 
-Use this exact manifest dependency for version 0.1.0:
+Use this exact manifest dependency for version 0.1.1:
 
 ```json
-"requirements": ["aioarubainstant==0.1.0"]
+"requirements": ["aioarubainstant==0.1.1"]
 ```
 
 Home Assistant can rely on immutable snapshots, stable MAC-address client
@@ -229,9 +237,9 @@ The trusted publisher is configured for owner `apaperclip`, repository
 `aioarubainstant`, workflow `release.yml`, and environment `pypi`. No PyPI
 token is stored in GitHub or this repository.
 
-Version 0.1.0 is available from
-[PyPI](https://pypi.org/project/aioarubainstant/0.1.0/) and the
-[GitHub release](https://github.com/apaperclip/aioarubainstant/releases/tag/v0.1.0).
+Version 0.1.1 is available from
+[PyPI](https://pypi.org/project/aioarubainstant/0.1.1/) and the
+[GitHub release](https://github.com/apaperclip/aioarubainstant/releases/tag/v0.1.1).
 
 ## License
 
