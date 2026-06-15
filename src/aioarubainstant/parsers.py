@@ -16,11 +16,14 @@ _MIN_WRAPPED_AP_HEADER_LINES: Final = 2
 _MIN_WRAPPED_AP_FIELDS: Final = 6
 _INTEGER: Final = re.compile(r"-?\d+")
 _MAC_HEX: Final = re.compile(r"^[0-9a-fA-F]{12}$")
-_COUNT_APS: Final = re.compile(r"\b(\d+)\s+Access\s+Points?\b", re.IGNORECASE)
+_COUNT_APS: Final = re.compile(
+    r"^[ \t]*(\d+)[ \t]+Access[ \t]+Points?[ \t]*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 _COUNT_CLIENTS: Final = re.compile(
-    r"\b(\d+)\s+(?:Wireless\s+)?Clients?\b|"
-    r"\bNumber\s+of\s+Clients?\s*:\s*(\d+)\b",
-    re.IGNORECASE,
+    r"^[ \t]*(\d+)[ \t]+(?:Wireless[ \t]+)?Clients?[ \t]*$|"
+    r"^[ \t]*Number[ \t]+of[ \t]+Clients?[ \t]*:[ \t]*(\d+)[ \t]*$",
+    re.IGNORECASE | re.MULTILINE,
 )
 _SECRET: Final = re.compile(
     r"(?i)(\b(?:sid|passwd|password)\b\s*(?:=|:)\s*)([^\s,}\]]+|\"[^\"]*\")"
@@ -47,16 +50,18 @@ _CLIENT_CHANNEL = ("channel",)
 _CLIENT_PHY = ("phy mode", "phy", "mode", "type")
 _CLIENT_ROLE = ("role",)
 
-_SUMMARY_NAME = ("cluster name", "swarm name", "virtual controller name")
+_SUMMARY_NAME = ("cluster name", "swarm name", "virtual controller name", "name")
 _SUMMARY_ADDRESS = (
     "management address",
     "management ip",
     "virtual controller ip",
     "virtual controller ip address",
+    "vc ip address",
 )
 _SUMMARY_MASTER = (
     "master ap ip address",
     "master ip address",
+    "master ip address *",
     "master ap",
     "master ip",
     "master",
@@ -193,6 +198,9 @@ def parse_summary(output: str) -> ArubaCluster:
     ap_count = _parse_int(_lookup(values, _SUMMARY_AP_COUNT))
     client_count = _parse_int(_lookup(values, _SUMMARY_CLIENT_COUNT))
     ap_count = ap_count if ap_count is not None else _extract_count(clean, _COUNT_APS)
+    client_count = (
+        client_count if client_count is not None else _extract_count(clean, _COUNT_CLIENTS)
+    )
     cluster = ArubaCluster(
         name=_optional(_lookup(values, _SUMMARY_NAME)),
         management_address=_optional(_lookup(values, _SUMMARY_ADDRESS)),

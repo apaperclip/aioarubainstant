@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-06-15
+
+### Fixed
+
+- Parse Aruba Instant 8.6 `show summary` labels for the cluster name, virtual
+  controller address, and marked master address.
+- Parse standalone controller-reported AP and client counts without allowing
+  count matches to cross line boundaries.
+
 ## [0.1.1] - 2026-06-14
 
 ### Fixed
@@ -28,3 +37,4 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 [0.1.0]: https://github.com/apaperclip/aioarubainstant/releases/tag/v0.1.0
 [0.1.1]: https://github.com/apaperclip/aioarubainstant/releases/tag/v0.1.1
+[0.1.2]: https://github.com/apaperclip/aioarubainstant/releases/tag/v0.1.2

@@ -239,6 +239,29 @@ def test_parse_summary_and_version_variants() -> None:
     assert parse_version("ArubaOS, Version 8.10.0.12-SSR") == "8.10.0.12-SSR"
 
 
+def test_parse_aruba_8_6_summary_field_and_count_variants() -> None:
+    summary = parse_summary(
+        "Name : Office\n"
+        "VC IP Address : 192.0.2.1\n"
+        "Master IP Address   * : 192.0.2.10\n"
+        "32 Clients\n"
+        "5 Access Points"
+    )
+
+    assert summary.name == "Office"
+    assert summary.management_address == "192.0.2.1"
+    assert summary.master_ap == "192.0.2.10"
+    assert summary.client_count == 32
+    assert summary.ap_count == 5
+
+
+def test_summary_count_matching_does_not_cross_lines() -> None:
+    summary = parse_summary("Client Alerts : 0\nClient details\n32 Clients\n5 Access Points")
+
+    assert summary.client_count == 32
+    assert summary.ap_count == 5
+
+
 def test_snapshot_uses_debug_clients_and_resolves_master_and_association() -> None:
     snapshot = parse_snapshot(snapshot_outputs())
 

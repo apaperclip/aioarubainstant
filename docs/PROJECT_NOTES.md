@@ -51,7 +51,10 @@ The observations that shaped the implementation were:
 - `show client debug` contained the client detail data needed by the models and
   replaced the originally planned combination of `show clients` and debug
   output.
-- `show summary` exposed `Number of Clients : <count>`.
+- `show summary` may expose either `Number of Clients : <count>` or a
+  standalone `<count> Clients` line.
+- Aruba Instant 8.6 may label cluster fields as `Name`, `VC IP Address`, and
+  `Master IP Address *`.
 - `show aps` exposed the controller-reported client count for each AP.
 - Parsed row counts must not be used as authoritative client-count model
   values.
