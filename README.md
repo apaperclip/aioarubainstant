@@ -4,7 +4,7 @@
 on Aruba Instant controllers. It is designed for Home Assistant integrations
 but has no Home Assistant dependency or entity logic.
 
-Version 0.1.1 supports Python 3.14 and Aruba Instant 8.6 monitoring commands.
+Version 0.1.3 supports Python 3.14 and Aruba Instant 8.6 monitoring commands.
 
 ## Features
 
@@ -42,7 +42,7 @@ including its Instant AOS-8.6 command history and examples.
 ## Installation
 
 ```bash
-python -m pip install aioarubainstant==0.1.1
+python -m pip install aioarubainstant==0.1.3
 ```
 
 ## Usage
@@ -80,7 +80,7 @@ Some Aruba Instant firmware emits a malformed response header that aiohttp
 rejects when `PYTHONASYNCIODEBUG` enables strict response parsing. A client
 using its internally owned HTTP session scopes Aruba-compatible response
 parsing to that controller connection without disabling asyncio debug globally.
-This compatibility behavior is included in version 0.1.1.
+This compatibility behavior is included in version 0.1.1 and later.
 
 For a caller-owned HTTP session:
 
@@ -144,15 +144,17 @@ PyPI, or Codex credentials in this repository.
 
 ## Home Assistant
 
-Use this exact manifest dependency for version 0.1.1:
+Use this exact manifest dependency for version 0.1.3:
 
 ```json
-"requirements": ["aioarubainstant==0.1.1"]
+"requirements": ["aioarubainstant==0.1.3"]
 ```
 
 Home Assistant can rely on immutable snapshots, stable MAC-address client
 identity, AP/client association, master resolution, explicit zero-client
 collections, and the exception contract above.
+Version 0.1.3 allows Home Assistant environments pinned to
+`aiohttp==3.13.5`.
 
 ## Development
 
@@ -237,9 +239,9 @@ The trusted publisher is configured for owner `apaperclip`, repository
 `aioarubainstant`, workflow `release.yml`, and environment `pypi`. No PyPI
 token is stored in GitHub or this repository.
 
-Version 0.1.1 is available from
-[PyPI](https://pypi.org/project/aioarubainstant/0.1.1/) and the
-[GitHub release](https://github.com/apaperclip/aioarubainstant/releases/tag/v0.1.1).
+Version 0.1.3 is available from
+[PyPI](https://pypi.org/project/aioarubainstant/0.1.3/) and the
+[GitHub release](https://github.com/apaperclip/aioarubainstant/releases/tag/v0.1.3).
 
 ## License
 

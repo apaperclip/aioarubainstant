@@ -8,11 +8,22 @@ from typing import TYPE_CHECKING, Any
 from aiohttp import TCPConnector
 from aiohttp.client_exceptions import ClientPayloadError
 from aiohttp.client_proto import ResponseHandler
-from aiohttp.helpers import DEFAULT_CHUNK_SIZE, BaseTimerContext
 from aiohttp.http_parser import HttpResponseParserPy, RawResponseMessage
 
 if TYPE_CHECKING:
+    from aiohttp.helpers import BaseTimerContext
     from aiohttp.streams import StreamReader
+
+
+def _response_read_bufsize_default() -> int:
+    defaults = ResponseHandler.set_response_params.__kwdefaults__ or {}
+    value = defaults.get("read_bufsize", 2**16)
+    if not isinstance(value, int):
+        return 2**16
+    return value
+
+
+_DEFAULT_READ_BUFSIZE = _response_read_bufsize_default()
 
 
 class _ArubaInstantResponseParser(HttpResponseParserPy):
@@ -42,7 +53,7 @@ class _ArubaInstantResponseHandler(ResponseHandler):
         read_until_eof: bool = False,
         auto_decompress: bool = True,
         read_timeout: float | None = None,
-        read_bufsize: int = DEFAULT_CHUNK_SIZE,
+        read_bufsize: int = _DEFAULT_READ_BUFSIZE,
         timeout_ceil_threshold: float = 5,
         max_line_size: int = 8190,
         max_field_size: int = 8190,

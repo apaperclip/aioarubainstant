@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import ssl
+from inspect import signature
 from typing import Any, Self, cast
 
 import aiohttp
@@ -21,6 +22,7 @@ from aioarubainstant import (
     ArubaInstantTimeoutError,
     async_get_snapshot,
 )
+from aioarubainstant._transport import _DEFAULT_READ_BUFSIZE
 from tests.test_parsers import snapshot_outputs
 
 
@@ -86,6 +88,15 @@ def make_client(
         timeout=timeout,
         session=cast("aiohttp.ClientSession", session),
     )
+
+
+def test_aiohttp_response_buffer_default_matches_installed_version() -> None:
+    """Keep the custom parser compatible with aiohttp 3.13.5 and newer."""
+    read_bufsize = signature(aiohttp.client_proto.ResponseHandler.set_response_params).parameters[
+        "read_bufsize"
+    ]
+
+    assert read_bufsize.default == _DEFAULT_READ_BUFSIZE
 
 
 @pytest.mark.asyncio

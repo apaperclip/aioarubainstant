@@ -1,21 +1,22 @@
 # Package Usage
 
-This guide summarizes the public contract of `aioarubainstant 0.1.1` for
+This guide summarizes the public contract of `aioarubainstant 0.1.3` for
 application and Home Assistant integration authors.
 
 ## Installation
 
 ```bash
-python -m pip install aioarubainstant==0.1.1
+python -m pip install aioarubainstant==0.1.3
 ```
 
 Home Assistant manifest requirement:
 
 ```json
-"requirements": ["aioarubainstant==0.1.1"]
+"requirements": ["aioarubainstant==0.1.3"]
 ```
 
 The package requires Python 3.14 or newer and has no Home Assistant dependency.
+Version 0.1.3 allows Home Assistant environments pinned to `aiohttp==3.13.5`.
 
 ## Collecting a Snapshot
 
@@ -62,7 +63,7 @@ For Aruba firmware that emits malformed HTTP response headers, let
 `ArubaInstantClient` create its own session. The internally owned session uses
 controller-scoped compatibility parsing even when `PYTHONASYNCIODEBUG=1` makes
 aiohttp strict. A caller-provided session keeps its own connector and parser
-behavior. This compatibility behavior is included in version 0.1.1.
+behavior. This compatibility behavior is included in version 0.1.1 and later.
 
 ## Snapshot Contract
 
