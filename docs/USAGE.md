@@ -1,22 +1,22 @@
 # Package Usage
 
-This guide summarizes the public contract of `aioarubainstant 0.1.3` for
+This guide summarizes the public contract of `aioarubainstant 0.1.4` for
 application and Home Assistant integration authors.
 
 ## Installation
 
 ```bash
-python -m pip install aioarubainstant==0.1.3
+python -m pip install aioarubainstant==0.1.4
 ```
 
 Home Assistant manifest requirement:
 
 ```json
-"requirements": ["aioarubainstant==0.1.3"]
+"requirements": ["aioarubainstant==0.1.4"]
 ```
 
 The package requires Python 3.14 or newer and has no Home Assistant dependency.
-Version 0.1.3 allows Home Assistant environments pinned to `aiohttp==3.13.5`.
+Version 0.1.4 allows Home Assistant environments pinned to `aiohttp==3.13.5`.
 
 ## Collecting a Snapshot
 

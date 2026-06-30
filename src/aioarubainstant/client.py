@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import ssl
-from asyncio import Lock
+from asyncio import Lock, sleep
 from typing import TYPE_CHECKING, Self
 from urllib.parse import urlsplit
 
@@ -25,6 +25,7 @@ from .parsers import parse_snapshot
 
 DEFAULT_PORT = 4343
 DEFAULT_TIMEOUT = 10.0
+INTER_COMMAND_DELAY = 0.25
 SUPPORTED_COMMANDS = frozenset(
     {
         "show aps",
@@ -114,10 +115,13 @@ class ArubaInstantClient:
     async def async_get_snapshot(self) -> ArubaInstantSnapshot:
         """Collect and parse a coherent monitoring snapshot."""
         async with self._command_lock:
-            outputs = {
-                command: await self._async_run_command_with_retry_unlocked(command, target=None)
-                for command in sorted(SUPPORTED_COMMANDS)
-            }
+            outputs = {}
+            for index, command in enumerate(sorted(SUPPORTED_COMMANDS)):
+                if index:
+                    await sleep(INTER_COMMAND_DELAY)
+                outputs[command] = await self._async_run_command_with_retry_unlocked(
+                    command, target=None
+                )
         return parse_snapshot(outputs)
 
     async def async_close(self) -> None:

@@ -114,7 +114,7 @@ At the time this prompt was written, the Aruba integration was a legacy YAML
 documentation incorrectly said telnet was required.
 
 Home Assistant `dev` required Python 3.14.2 or newer, making
-`aioarubainstant==0.1.3` compatible. Re-verify all of these facts before
+`aioarubainstant==0.1.4` compatible. Re-verify all of these facts before
 implementation rather than assuming they remain current.
 
 ## Non-negotiable library behavior
@@ -148,7 +148,7 @@ Produce a focused, review-ready Home Assistant Core migration with these
 minimum behaviors:
 
 1. Replace `pexpect` and SSH command parsing with
-   `aioarubainstant==0.1.3` in `manifest.json`.
+   `aioarubainstant==0.1.4` in `manifest.json`.
 2. Use asynchronous Home Assistant APIs only. Do not call blocking network or
    subprocess APIs in the event loop.
 3. Add a UI config flow that validates a real snapshot before creating an

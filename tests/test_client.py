@@ -462,6 +462,34 @@ async def test_public_snapshot_convenience_function() -> None:
 
 
 @pytest.mark.asyncio
+async def test_snapshot_waits_between_commands(monkeypatch: pytest.MonkeyPatch) -> None:
+    sleeps: list[float] = []
+
+    async def fake_sleep(delay: float) -> None:
+        sleeps.append(delay)
+
+    monkeypatch.setattr("aioarubainstant.client.sleep", fake_sleep)
+    outputs = snapshot_outputs()
+    session = FakeSession(
+        {"Status": "Success", "sid": "session-one"},
+        *(
+            {"Status": "Success", "Status-code": 0, "Command output": outputs[command]}
+            for command in sorted(outputs)
+        ),
+    )
+
+    snapshot = await make_client(session).async_get_snapshot()
+
+    assert snapshot.cluster.name == "Office"
+    assert [
+        request["params"]["cmd"]
+        for request in session.requests
+        if request["url"].endswith("show-cmd")
+    ] == sorted(outputs)
+    assert sleeps == [0.25, 0.25, 0.25]
+
+
+@pytest.mark.asyncio
 async def test_password_and_sid_are_never_logged(caplog: pytest.LogCaptureFixture) -> None:
     session = FakeSession(
         {"Status": "Success", "sid": "session-one"},
